@@ -82,10 +82,6 @@ add('gen', {
   sjcl: function() {
     eccjs.sjcl.ecc.ecdsa.generateKeys(c2, 0);
   },
-  jodid: function() {
-    var p = jodid.dh.genKey();
-    var u = jodid.dh.publicKey(p);
-  }
 });
 
 add('ecdh', {
@@ -94,38 +90,54 @@ add('ecdh', {
   }
 });
 
-var cu1 = elliptic.ec('curve25519');
-var ku1 = cu1.genKeyPair();
-var kp2 = jodid.eddsa.genKeySeed();
-var ku2 = jodid.eddsa.publicKey(kp2);
-var su1 = cu1.sign(m1, ku1);
-var su2 = jodid.eddsa.signature(m1, kp2, ku2);
+var c1dh = elliptic.ec('curve25519');
+var k1dh = c1dh.genKeyPair();
 
-add('curve25519', {
+var c1ed = elliptic.ec('ed25519');
+var k1ed = c1ed.genKeyPair();
+var s1ed = c1ed.sign(m1, k1ed);
+assert(c1ed.verify(m1, s1ed, k1ed));
+
+var kp2ed = jodid.eddsa.genKeySeed();
+var ku2ed = jodid.eddsa.publicKey(kp2ed);
+var s2ed = jodid.eddsa.signature(m1, kp2ed, ku2ed);
+assert(jodid.eddsa.checkSig(s2ed, m1, ku2ed));
+
+add('curve25519 gen', {
   elliptic: function() {
-    var s = ku1.derive(cu1.genKeyPair().getPublic());
+    c1dh.genKeyPair().getPublic();
   },
   jodid: function() {
     var p = jodid.eddsa.genKeySeed();
-    var s = jodid.dh.computeKey(kp2, jodid.dh.publicKey(p));
+    jodid.dh.publicKey(p);
+  }
+});
+
+add('curve25519 dh', {
+  elliptic: function() {
+      k1dh.derive(c1dh.genKeyPair().getPublic());
+  },
+  jodid: function() {
+    var p = jodid.eddsa.genKeySeed();
+    jodid.dh.computeKey(kp2ed, jodid.dh.publicKey(p));
   }
 });
 
 add('ed25519 sign', {
   elliptic: function() {
-    cu1.sign(m1, ku1);
+    c1ed.sign(m1, k1ed);
   },
   jodid: function() {
-    jodid.eddsa.signature(m1, kp2, ku2);
+    jodid.eddsa.signature(m1, kp2ed, ku2ed);
   }
 });
 
 add('ed25519 verify', {
   elliptic: function() {
-    cu1.verify(m1, su1, ku1);
+    c1ed.verify(m1, s1ed, k1ed);
   },
   jodid: function() {
-    jodid.eddsa.checkSig(su2, m1, pu2);
+    jodid.eddsa.checkSig(s2ed, m1, ku2ed);
   }
 });
 
